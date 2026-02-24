@@ -1,0 +1,12 @@
+discord.py
+discord.py[voice]
+python-dotenv
+yt-dlp
+openai
+elevenlabs
+ffmpeg-python
+asyncio
+pynacl
+discord-ext-voice-recv 
+faster-whisper
+numpy 
