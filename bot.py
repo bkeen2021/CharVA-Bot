@@ -32,7 +32,7 @@ guild = discord.Object(id=GUILD_ID)
 #Initialize OpenAI, 11Labs, and whisper clients
 client = OpenAI(api_key=OPENAI_API_KEY)
 eleven_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
-whisper_model = WhisperModel("base", compute_type="int8")
+whisper_model = WhisperModel("base", device="cuda", compute_type="int8") #if you don't have an nvidia gpu and nvidia cuda 12.0 driver installed then change the device to 'cpu' 
 
 
 #Set up intents
@@ -92,11 +92,11 @@ class TranscriptionSink(voice_recv.AudioSink):
         self.last_audio_time = time.monotonic()
 
     async def wait_for_silence(self):
-        # Wait until speech begins
+        #Wait until speech begins
         while not self.started:
             await asyncio.sleep(0.1)
 
-        # Then monitor silence
+        #Then monitor silence
         while True:
             await asyncio.sleep(0.5)
             if time.monotonic() - self.last_audio_time > self.silence_timeout:
@@ -109,9 +109,9 @@ class TranscriptionSink(voice_recv.AudioSink):
         audio_bytes = b"".join(self.audio_data)
 
         with wave.open(filename, "wb") as wf:
-            wf.setnchannels(2)       # Discord stereo
-            wf.setsampwidth(2)       # 16-bit audio
-            wf.setframerate(48000)   # Discord sample rate
+            wf.setnchannels(2)       #Discord stereo
+            wf.setsampwidth(2)       #16-bit audio
+            wf.setframerate(48000)   #Discord sample rate
             wf.writeframes(audio_bytes)
 
 
@@ -184,7 +184,7 @@ async def tts(
     vc = await voice_channel.connect()
 
     try:
-        # Generate audio using selected voice
+        #Generate audio using selected voice
         audio = eleven_client.text_to_speech.convert(
             voice_id=voice.value,
             model_id="eleven_multilingual_v2",
@@ -230,7 +230,7 @@ async def transcribe(interaction: discord.Interaction):
 
     await vc.disconnect()
 
-    # Transcribe
+    #Transcribe
     segments, info = whisper_model.transcribe("recording.wav")
     text = " ".join([segment.text for segment in segments])
 
@@ -256,11 +256,11 @@ async def talk(interaction: discord.Interaction, character: app_commands.Choice[
                 content="You must be in a voice channel.")
             return
 
-        # Join VC
+        #Join VC
         channel = interaction.user.voice.channel
         vc = await channel.connect(cls=voice_recv.VoiceRecvClient)
 
-        # -------- RECORD --------
+        #-------- RECORD --------
         sink = TranscriptionSink(interaction.user.id)
         vc.listen(sink)
 
@@ -275,7 +275,7 @@ async def talk(interaction: discord.Interaction, character: app_commands.Choice[
 
         sink.save_wav()
 
-        # -------- TRANSCRIBE --------
+        #-------- TRANSCRIBE --------
         segments, info = whisper_model.transcribe("recording.wav")
         user_text = " ".join([segment.text for segment in segments])
 
@@ -284,7 +284,7 @@ async def talk(interaction: discord.Interaction, character: app_commands.Choice[
             await vc.disconnect()
             return
 
-        # -------- GENERATE AI RESPONSE --------
+        #-------- GENERATE AI RESPONSE --------
         char_data = CHARACTERS[character.value]
 
         completion = client.chat.completions.create(
@@ -297,7 +297,7 @@ async def talk(interaction: discord.Interaction, character: app_commands.Choice[
 
         ai_reply = completion.choices[0].message.content
 
-        # -------- TTS --------
+        #-------- TTS --------
         audio = eleven_client.text_to_speech.convert(
             voice_id=char_data["voice_id"],
             model_id="eleven_multilingual_v2",
